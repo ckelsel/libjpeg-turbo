@@ -172,7 +172,7 @@ if test "x$VERSION_SCRIPT_FLAG" = "x"; then
   VERSION_SCRIPT=no
   AC_MSG_RESULT(no)
 fi
-LDFLAGS="$SAVED_LDFLAGS"
+LDFLAGS="$SAVED_LDFLAGS -lrt"
 
 AC_MSG_CHECKING([whether to use version script when building libjpeg-turbo])
 AC_MSG_RESULT($VERSION_SCRIPT)
@@ -221,6 +221,11 @@ if test "x${with_simd}" != "xno"; then
       AC_PROG_NASM
       simd_arch=i386
     ;;
+    armv7l)
+      AC_MSG_RESULT([yes (ARM_NEON)])
+      AM_PROG_AS
+      simd_arch=arm_neon
+   ;;
     *)
       AC_MSG_RESULT([no ("$host_cpu")])
       AC_MSG_WARN([SIMD support not available for this CPU.  Performance will suffer.])
@@ -236,6 +241,7 @@ fi
 AM_CONDITIONAL([WITH_SIMD], [test "x$with_simd" != "xno"])
 AM_CONDITIONAL([SIMD_I386], [test "x$simd_arch" = "xi386"])
 AM_CONDITIONAL([SIMD_X86_64], [test "x$simd_arch" = "xx86_64"])
+AM_CONDITIONAL([SIMD_ARM_NEON], [test "x$simd_arch" = "xarm_neon"])
 AM_CONDITIONAL([X86_64], [test "x$host_cpu" = "xx86_64" -o "x$host_cpu" = "xamd64"])
 
 case "$host_cpu" in
@@ -246,6 +252,10 @@ case "$host_cpu" in
   i*86 | x86 | ia32)
     RPMARCH=i386
     DEBARCH=i386
+    ;;
+  armv7l)
+    RPMARCH=armel
+    DEBARCH=armel
     ;;
 esac
 
