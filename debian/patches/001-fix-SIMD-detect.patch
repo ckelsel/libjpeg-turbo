@@ -1,0 +1,13 @@
+Index: libjpeg-turbo/configure.ac
+===================================================================
+--- libjpeg-turbo.orig/configure.ac	2011-05-26 21:18:09.000000000 +0000
++++ libjpeg-turbo/configure.ac	2011-05-26 21:20:01.000000000 +0000
+@@ -221,7 +221,7 @@
+       AC_PROG_NASM
+       simd_arch=i386
+     ;;
+-    armv7l)
++    arm*)
+       AC_MSG_RESULT([yes (ARM_NEON)])
+       AM_PROG_AS
+       simd_arch=arm_neon

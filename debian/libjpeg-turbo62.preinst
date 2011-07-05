@@ -1,0 +1,16 @@
+#!/bin/sh -x
+
+set -e
+
+if [ install = "$1" ] || dpkg --compare-versions "$2" lt 6b-git.20101110t043445.8a20111-0linaro2; then
+	if [ ! -d /usr/lib/libjpeg-divert ] 
+        then
+		mkdir -p /usr/lib/libjpeg-divert
+        fi
+	dpkg-divert --package libturbojpeg62 --rename --divert /usr/lib/libjpeg-divert/libjpeg.so.62.0.0 \
+               --add /usr/lib/libjpeg.so.62.0.0
+	dpkg-divert --package libturbojpeg62 --rename --divert /usr/lib/libjpeg-divert/libjpeg.so.62 \
+               --add /usr/lib/libjpeg.so.62
+fi
+
+#DEBHELPER#

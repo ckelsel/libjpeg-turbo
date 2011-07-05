@@ -6,6 +6,26 @@ EXTRA_DIST = nasm_lt.sh jcclrmmx.asm jcclrss2.asm jdclrmmx.asm jdclrss2.asm \
 	jdmrgmmx.asm jdmrgss2.asm jcclrss2-64.asm jdclrss2-64.asm \
 	jdmrgss2-64.asm CMakeLists.txt
 
+if SIMD_ARM_NEON
+
+libsimd_la_SOURCES = jsimd_arm_neon.c \
+                     jdcolor-armv7.s \
+                     jdidct-armv7.s
+
+jdcolor-armv7.lo: jdcolor-armv7.s
+jdidct-armv7.lo: jdidct-armv7.s
+
+.c.lo:
+	$(LIBTOOL) --mode=compile gcc -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -c  $< -o $@
+
+.s.o:
+	$(COMPILE) -c $< -o $@
+
+.s.lo:
+	$(LIBTOOL) --mode=compile gcc -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -c  $< -o $@
+
+endif
+
 if SIMD_X86_64
 
 libsimd_la_SOURCES = jsimd_x86_64.c \
@@ -21,6 +41,10 @@ libsimd_la_SOURCES = jsimd_x86_64.c \
 jccolss2-64.lo: jcclrss2-64.asm
 jdcolss2-64.lo: jdclrss2-64.asm
 jdmerss2-64.lo: jdmrgss2-64.asm
+
+.asm.lo:
+	$(LIBTOOL) --mode=compile --tag NASM $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) $< -o $@
+
 endif
 
 if SIMD_I386
@@ -47,12 +71,14 @@ jdcolmmx.lo: jdclrmmx.asm
 jdcolss2.lo: jdclrss2.asm
 jdmermmx.lo: jdmrgmmx.asm
 jdmerss2.lo: jdmrgss2.asm
+
+.asm.lo:
+	$(LIBTOOL) --mode=compile --tag NASM $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) $< -o $@
+
 endif
 
 AM_CPPFLAGS = -I$(top_srcdir) 
 
-.asm.lo:
-	$(LIBTOOL) --mode=compile --tag NASM $(srcdir)/nasm_lt.sh $(NASM) $(NAFLAGS) -I$(srcdir) $< -o $@
 
 jsimdcfg.inc: $(srcdir)/jsimdcfg.inc.h ../jpeglib.h ../jconfig.h ../jmorecfg.h
 	$(CPP) -I$(top_builddir) -I$(top_builddir)/simd $(srcdir)/jsimdcfg.inc.h | $(EGREP) "^[\;%]|^\ %" | sed 's%_cpp_protection_%%' | sed 's@% define@%define@g' > $@
