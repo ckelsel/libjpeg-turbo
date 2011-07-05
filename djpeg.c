@@ -50,6 +50,26 @@ static const char * const cdjpeg_message_table[] = {
   NULL
 };
 
+#define PROFILE_DECODING
+
+#ifdef PROFILE_DECODING
+#include <time.h>
+
+#define  TIMER_DEFINE_VARS  struct timespec starttime, endtime;
+#define  TIMER_GETDIFF_MS() (long)( (endtime.tv_sec - starttime.tv_sec)*1000 + (endtime.tv_nsec - starttime.tv_nsec)/1000000)
+#define  TIMER_START do { clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &starttime); } while (0)
+#define  TIMER_STOP do { clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &endtime); } while (0)
+#define  TIMER_PRINT(...) fprintf(stderr, __VA_ARGS__)
+
+#else
+
+#define TIMER_DEFINE_VARS do {} while (0)
+#define TIMER_GETDIFF_MS do {} while (0)
+#define TIMER_START do {} while (0)
+#define TIMER_STOP do {} while (0)
+#define TIMER_PRINT(...) do {} while (0)
+
+#endif
 
 /*
  * This list defines the known output image formats
@@ -539,6 +559,11 @@ main (int argc, char **argv)
   /* Adjust default decompression parameters by re-parsing the options */
   file_index = parse_switches(&cinfo, argc, argv, 0, TRUE);
 
+  if ((cinfo.jpeg_color_space == JCS_CMYK) ||
+      (cinfo.jpeg_color_space == JCS_YCCK)) {
+    cinfo.out_color_space = JCS_RGB;
+  }
+
   /* Initialize the output module now to let it override any crucial
    * option settings (for instance, GIF wants to force color quantization).
    */
@@ -583,12 +608,18 @@ main (int argc, char **argv)
   /* Write output file header */
   (*dest_mgr->start_output) (&cinfo, dest_mgr);
 
+  TIMER_DEFINE_VARS;
+  TIMER_START;
+
   /* Process data */
   while (cinfo.output_scanline < cinfo.output_height) {
     num_scanlines = jpeg_read_scanlines(&cinfo, dest_mgr->buffer,
 					dest_mgr->buffer_height);
     (*dest_mgr->put_pixel_rows) (&cinfo, dest_mgr, num_scanlines);
   }
+
+  TIMER_STOP;
+  TIMER_PRINT ("Decoding took %d ms\n", TIMER_GETDIFF_MS());
 
 #ifdef PROGRESS_REPORT
   /* Hack: count final pass as done in case finish_output does an extra pass.
