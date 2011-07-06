@@ -8,6 +8,9 @@ EXTRA_DIST = nasm_lt.sh jcclrmmx.asm jcclrss2.asm jdclrmmx.asm jdclrss2.asm \
 
 if SIMD_ARM_NEON
 
+AM_CFLAGS = -march=armv7-a -mfpu=neon
+AM_CCASFLAGS = -march=armv7-a -mfpu=neon
+
 libsimd_la_SOURCES = jsimd_arm_neon.c \
                      jdcolor-armv7.s \
                      jdidct-armv7.s
