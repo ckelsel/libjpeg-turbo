@@ -13,7 +13,8 @@ AM_CCASFLAGS = -march=armv7-a -mfpu=neon
 
 libsimd_la_SOURCES = jsimd_arm_neon.c \
                      jdcolor-armv7.s \
-                     jdidct-armv7.s
+                     jdidct-armv7.s \
+                     armv6_idct.S
 
 jdcolor-armv7.lo: jdcolor-armv7.s
 jdidct-armv7.lo: jdidct-armv7.s

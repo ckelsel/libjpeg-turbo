@@ -220,6 +220,10 @@ typedef enum {
 	JCS_YCbCr,		/* Y/Cb/Cr (also known as YUV) */
 	JCS_CMYK,		/* C/M/Y/K */
 	JCS_YCCK,		/* Y/Cb/Cr/K */
+#ifdef ANDROID_RGB
+    JCS_RGBA_8888,  /* red/green/blue/alpha */
+    JCS_RGB_565,    /* red/green/blue in 565 format */
+#endif
 	JCS_EXT_RGB,		/* red/green/blue */
 	JCS_EXT_RGBX,		/* red/green/blue/x */
 	JCS_EXT_BGR,		/* blue/green/red */
@@ -292,6 +296,7 @@ struct jpeg_compress_struct {
    * be correct before you can even call jpeg_set_defaults().
    */
 
+  JDIMENSION original_image_width;     /* nominal image width (from SOF marker) */
   JDIMENSION image_width;	/* input image width */
   JDIMENSION image_height;	/* input image height */
   int input_components;		/* # of color components in input image */
@@ -397,6 +402,7 @@ struct jpeg_compress_struct {
   /*
    * These fields are computed during compression startup
    */
+  boolean tile_decode;         /* TRUE if using tile based decoding */
   boolean progressive_mode;	/* TRUE if scan script uses progressive mode */
   int max_h_samp_factor;	/* largest h_samp_factor */
   int max_v_samp_factor;	/* largest v_samp_factor */
@@ -465,6 +471,7 @@ struct jpeg_decompress_struct {
   /* Basic description of image --- filled in by jpeg_read_header(). */
   /* Application may inspect these values to decide how to process image. */
 
+  JDIMENSION original_image_width;     /* nominal image width (from SOF      marker) */
   JDIMENSION image_width;	/* nominal image width (from SOF marker) */
   JDIMENSION image_height;	/* nominal image height */
   int num_components;		/* # of color components in JPEG image */
@@ -497,6 +504,7 @@ struct jpeg_decompress_struct {
   boolean enable_1pass_quant;	/* enable future use of 1-pass quantizer */
   boolean enable_external_quant;/* enable future use of external colormap */
   boolean enable_2pass_quant;	/* enable future use of 2-pass quantizer */
+  boolean tile_decode;         /* TRUE if using tile based decoding */
 
   /* Description of actual output image that will be returned to application.
    * These fields are computed by jpeg_start_decompress().
@@ -693,6 +701,60 @@ struct jpeg_decompress_struct {
   struct jpeg_color_quantizer * cquantize;
 };
 
+typedef struct {
+
+  // |--- byte_offset ---|- bit_left -|
+  //  \------ 27 -------/ \---- 5 ----/
+  unsigned int bitstream_offset;
+  short prev_dc[3];
+
+  // remaining EOBs in EOBRUN
+  unsigned short EOBRUN;
+
+  // save the decoder current bit buffer, entropy->bitstate.get_buffer.
+  INT32 get_buffer;
+
+  // save the restart info.
+  unsigned short restarts_to_go;
+  unsigned char next_restart_num;
+} huffman_offset_data;
+
+typedef struct {
+
+  // The header starting position of this scan
+  unsigned int bitstream_offset;
+
+  // Number of components in this scan
+  int comps_in_scan;
+
+  // Number of MCUs in each row
+  int MCUs_per_row;
+  int MCU_rows_per_iMCU_row;
+
+  // The last MCU position and its dc value in this scan
+  huffman_offset_data prev_MCU_offset;
+
+  huffman_offset_data **offset;
+} huffman_scan_header;
+
+#define DEFAULT_MCU_SAMPLE_SIZE 16
+
+typedef struct {
+
+  // The number of MCUs that we sample each time as an index point
+  int MCU_sample_size;
+
+  // Number of scan in this image
+  int scan_count;
+
+  // Number of iMCUs rows in this image
+  int total_iMCU_rows;
+
+  // Memory used by scan struct
+  size_t mem_used;
+  huffman_scan_header *scan;
+} huffman_index;
+
 
 /* "Object" declarations for JPEG modules that may be supplied or called
  * directly by the surrounding application.
@@ -788,13 +850,16 @@ struct jpeg_destination_mgr {
 
 struct jpeg_source_mgr {
   const JOCTET * next_input_byte; /* => next byte to read from buffer */
+  const JOCTET * start_input_byte; /* => first byte to read from input */
   size_t bytes_in_buffer;	/* # of bytes remaining in buffer */
+  size_t current_offset; /* current readed input offset */
 
   JMETHOD(void, init_source, (j_decompress_ptr cinfo));
   JMETHOD(boolean, fill_input_buffer, (j_decompress_ptr cinfo));
   JMETHOD(void, skip_input_data, (j_decompress_ptr cinfo, long num_bytes));
   JMETHOD(boolean, resync_to_restart, (j_decompress_ptr cinfo, int desired));
   JMETHOD(void, term_source, (j_decompress_ptr cinfo));
+  JMETHOD(boolean, seek_input_data, (j_decompress_ptr cinfo, long byte_offset));
 };
 
 
@@ -1069,9 +1134,22 @@ EXTERN(int) jpeg_read_header JPP((j_decompress_ptr cinfo,
 
 /* Main entry points for decompression */
 EXTERN(boolean) jpeg_start_decompress JPP((j_decompress_ptr cinfo));
+EXTERN(boolean) jpeg_start_tile_decompress JPP((j_decompress_ptr cinfo));
 EXTERN(JDIMENSION) jpeg_read_scanlines JPP((j_decompress_ptr cinfo,
 					    JSAMPARRAY scanlines,
 					    JDIMENSION max_lines));
+EXTERN(JDIMENSION) jpeg_read_scanlines_from JPP((j_decompress_ptr cinfo,
+                                           JSAMPARRAY scanlines,
+                                           int line_offset,
+                                           JDIMENSION max_lines));
+EXTERN(JDIMENSION) jpeg_read_tile_scanline JPP((j_decompress_ptr cinfo,
+                        huffman_index *index,
+                        JSAMPARRAY scanlines));
+EXTERN(void) jpeg_init_read_tile_scanline JPP((j_decompress_ptr cinfo,
+                        huffman_index *index,
+                               int *start_x, int *start_y,
+                        int *width, int *height));
+
 EXTERN(boolean) jpeg_finish_decompress JPP((j_decompress_ptr cinfo));
 
 /* Replaces jpeg_read_scanlines when reading raw downsampled data. */
@@ -1112,6 +1190,9 @@ EXTERN(void) jpeg_set_marker_processor
 
 /* Read or write raw DCT coefficients --- useful for lossless transcoding. */
 EXTERN(jvirt_barray_ptr *) jpeg_read_coefficients JPP((j_decompress_ptr cinfo));
+EXTERN(boolean) jpeg_build_huffman_index
+    JPP((j_decompress_ptr cinfo, huffman_index *index));
+
 EXTERN(void) jpeg_write_coefficients JPP((j_compress_ptr cinfo,
 					  jvirt_barray_ptr * coef_arrays));
 EXTERN(void) jpeg_copy_critical_parameters JPP((j_decompress_ptr srcinfo,
@@ -1135,6 +1216,16 @@ EXTERN(void) jpeg_destroy JPP((j_common_ptr cinfo));
 /* Default restart-marker-resync procedure for use by data source modules */
 EXTERN(boolean) jpeg_resync_to_restart JPP((j_decompress_ptr cinfo,
 					    int desired));
+
+EXTERN(void) jpeg_configure_huffman_decoder(j_decompress_ptr cinfo,
+                        huffman_offset_data offset);
+EXTERN(void) jpeg_get_huffman_decoder_configuration(j_decompress_ptr cinfo,
+                        huffman_offset_data *offset);
+EXTERN(void) jpeg_create_huffman_index(j_decompress_ptr cinfo,
+                        huffman_index *index);
+EXTERN(void) jpeg_configure_huffman_index_scan(j_decompress_ptr cinfo,
+                        huffman_index *index, int scan_no, int offset);
+EXTERN(void) jpeg_destroy_huffman_index(huffman_index *index);
 
 
 /* These marker codes are exported since applications and data source modules

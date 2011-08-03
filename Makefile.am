@@ -4,6 +4,9 @@ libturbojpeg_la_LDFLAGS = -avoid-version -no-undefined
 include_HEADERS = jerror.h jmorecfg.h jpeglib.h turbojpeg.h
 nodist_include_HEADERS = jconfig.h
 
+# -DUSE_ANDROID_ASHMEM
+libjpeg_la_CFLAGS = -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT
+
 HDRS = jchuff.h jdct.h jdhuff.h jerror.h jinclude.h jmemsys.h jmorecfg.h \
 	jpegint.h jpeglib.h jversion.h jsimd.h jsimddct.h jpegcomp.h
 
@@ -14,7 +17,10 @@ libjpeg_la_SOURCES = $(HDRS) jcapimin.c jcapistd.c jccoefct.c jccolor.c \
 	jddctmgr.c jdhuff.c jdinput.c jdmainct.c jdmarker.c jdmaster.c \
 	jdmerge.c jdphuff.c jdpostct.c jdsample.c jdtrans.c jerror.c \
 	jfdctflt.c jfdctfst.c jfdctint.c jidctflt.c jidctfst.c jidctint.c \
-	jidctred.c jquant1.c jquant2.c jutils.c jmemmgr.c jmemnobs.c
+	jidctred.c jquant1.c jquant2.c jutils.c jmemmgr.c jmemnobs.c 
+#        jmem-android.c jmem-ashmem.c
+
+
 
 if WITH_ARITH
 
