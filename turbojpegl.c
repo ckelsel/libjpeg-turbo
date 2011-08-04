@@ -285,7 +285,7 @@ DLLEXPORT int DLLCALL tjCompress(tjhandle h,
 				ptr+=PAD(cw[i], 4);
 			}
 		}
-		yuvsize=(unsigned long)(ptr-dstbuf);
+		yuvsize=(unsigned long)((unsigned char*)ptr-dstbuf);
 
 		for(row=0; row<ph; row+=cinfo->max_v_samp_factor)
 		{

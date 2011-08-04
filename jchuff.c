@@ -476,7 +476,7 @@ dump_buffer (working_state * state)
     }                                                             \
   }                                                               \
   else {                                                          \
-    state->free_in_buffer -= (buffer - state->next_output_byte);  \
+    state->free_in_buffer -= (buffer - (unsigned char *)state->next_output_byte); \
     state->next_output_byte = buffer;                             \
   }                                                               \
  }
