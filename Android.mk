@@ -34,13 +34,13 @@ LOCAL_MODULE := libsimd
 include $(BUILD_STATIC_LIBRARY)
 
 ######################################################
-###           libturbojpeg.so                       ##
+###           libjpeg.so                       ##
 ######################################################
 
 include $(CLEAR_VARS)
 
 # From autoconf-generated Makefile
-libturbojpeg_SOURCES_DIST = jcapimin.c jcapistd.c jccoefct.c \
+libjpeg_SOURCES_DIST = jcapimin.c jcapistd.c jccoefct.c \
         jccolor.c jcdctmgr.c jchuff.c jcinit.c jcmainct.c jcmarker.c \
         jcmaster.c jcomapi.c jcparam.c jcphuff.c jcprepct.c jcsample.c \
         jctrans.c jdapimin.c jdapistd.c jdatadst.c jdatasrc.c \
@@ -52,20 +52,20 @@ libturbojpeg_SOURCES_DIST = jcapimin.c jcapistd.c jccoefct.c \
 	jdarith.c turbojpegl.c turbojpeg-mapfile
 	#jmem-android.c jmemnobs.c
 
-LOCAL_SRC_FILES:= $(libturbojpeg_SOURCES_DIST)
+LOCAL_SRC_FILES:= $(libjpeg_SOURCES_DIST)
 
 LOCAL_SHARED_LIBRARIES := libcutils
 LOCAL_STATIC_LIBRARIES := libsimd
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
-LOCAL_CFLAGS := -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -DUSE_ANDROID_ASHMEM
+LOCAL_CFLAGS := -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays -DANDROID_TILE_BASED_DECODE -DUSE_ANDROID_ASHMEM 
 
 LOCAL_MODULE_PATH := $(TARGET_OUT_OPTIONAL_STATIC_LIBRARY)
 
 LOCAL_MODULE_TAGS := debug
 
-LOCAL_MODULE := libturbojpeg
+LOCAL_MODULE := libjpeg
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -81,7 +81,7 @@ cjpeg_SOURCES = cdjpeg.c cjpeg.c rdbmp.c rdgif.c \
 
 LOCAL_SRC_FILES:= $(cjpeg_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -107,7 +107,7 @@ djpeg_SOURCES = cdjpeg.c djpeg.c rdcolmap.c rdswitch.c \
 
 LOCAL_SRC_FILES:= $(djpeg_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -132,7 +132,7 @@ jpegtran_SOURCES = jpegtran.c rdswitch.c cdjpeg.c transupp.c
 
 LOCAL_SRC_FILES:= $(jpegtran_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -157,7 +157,7 @@ jpegut_SOURCES = jpegut.c bmp.c
 
 LOCAL_SRC_FILES:= $(jpegut_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -182,7 +182,7 @@ jpgtest_SOURCES = jpgtest.c bmp.c
 
 LOCAL_SRC_FILES:= $(jpgtest_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -207,7 +207,7 @@ rdjpgcom_SOURCES = rdjpgcom.c
 
 LOCAL_SRC_FILES:= $(rdjpgcom_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
@@ -232,7 +232,7 @@ wrjpgcom_SOURCES = wrjpgcom.c
 
 LOCAL_SRC_FILES:= $(wrjpgcom_SOURCES)
 
-LOCAL_SHARED_LIBRARIES := libturbojpeg
+LOCAL_SHARED_LIBRARIES := libjpeg
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
