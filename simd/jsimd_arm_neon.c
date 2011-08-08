@@ -41,7 +41,7 @@ typedef my_color_deconverter * my_cconvert_ptr;
 EXTERN (void) idct_1x1_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
 EXTERN (void) idct_2x2_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
 EXTERN (void) idct_4x4_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
-EXTERN (void) idct_8x8_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
+EXTERN (void) idct_8x8_venum (INT16 * coeffPtr, UINT8 **samplePtr, INT32 col, INT16 *qtab);
 
 /* Color conversion routines */
 EXTERN (void) yvup2rgb565_venum (UINT8 *pLumaLine,
@@ -450,54 +450,10 @@ jsimd_idct_islow (j_decompress_ptr cinfo, jpeg_component_info * compptr,
                 JCOEFPTR coef_block, JSAMPARRAY output_buf,
                 JDIMENSION output_col)
 {
-  ISLOW_MULT_TYPE * quantptr;
-  JCOEFPTR coefptr;
-  int ctr;
-
-  /* idct_out temp buffer is needed because output_buf sample allocation is 8 bits,
-   * while IDCT output expects 16 bits.
-   */
-  INT16 idct_out[DCTSIZE2];  /* buffers data between passes */
-  JSAMPROW outptr;
-  INT16*  idctptr;
-
-  coefptr  = coef_block;
-  quantptr = (ISLOW_MULT_TYPE *) compptr->dct_table;
-
-  /* Dequantize the coeff buffer and write it back to the same location */
-  for (ctr = DCTSIZE; ctr > 0; ctr--) {
-    coefptr[0]         = DEQUANTIZE(coefptr[0]        , quantptr[0]        );
-    coefptr[DCTSIZE*1] = DEQUANTIZE(coefptr[DCTSIZE*1], quantptr[DCTSIZE*1]);
-    coefptr[DCTSIZE*2] = DEQUANTIZE(coefptr[DCTSIZE*2], quantptr[DCTSIZE*2]);
-    coefptr[DCTSIZE*3] = DEQUANTIZE(coefptr[DCTSIZE*3], quantptr[DCTSIZE*3]);
-    coefptr[DCTSIZE*4] = DEQUANTIZE(coefptr[DCTSIZE*4], quantptr[DCTSIZE*4]);
-    coefptr[DCTSIZE*5] = DEQUANTIZE(coefptr[DCTSIZE*5], quantptr[DCTSIZE*5]);
-    coefptr[DCTSIZE*6] = DEQUANTIZE(coefptr[DCTSIZE*6], quantptr[DCTSIZE*6]);
-    coefptr[DCTSIZE*7] = DEQUANTIZE(coefptr[DCTSIZE*7], quantptr[DCTSIZE*7]);
-
-    /* advance pointers to next column */
-    quantptr++;
-    coefptr++;
-  }
-
   idct_8x8_venum((INT16*)coef_block,
-                 (INT16*)idct_out,
-                 DCTSIZE * sizeof(INT16));
-
-  idctptr = idct_out;
-  for (ctr = 0; ctr < DCTSIZE; ctr++) {
-    outptr = output_buf[ctr] + output_col;
-    // outptr sample size is 1 byte while idctptr sample size is 2 bytes
-    outptr[0] = idctptr[0];
-    outptr[1] = idctptr[1];
-    outptr[2] = idctptr[2];
-    outptr[3] = idctptr[3];
-    outptr[4] = idctptr[4];
-    outptr[5] = idctptr[5];
-    outptr[6] = idctptr[6];
-    outptr[7] = idctptr[7];
-    idctptr  += DCTSIZE;      /* advance pointers to next row */
-  }
+                 output_buf,
+                 output_col,
+                 compptr->dct_table);
 }
 
 GLOBAL(void)
@@ -505,54 +461,10 @@ jsimd_idct_ifast (j_decompress_ptr cinfo, jpeg_component_info * compptr,
                 JCOEFPTR coef_block, JSAMPARRAY output_buf,
                 JDIMENSION output_col)
 {
-  ISLOW_MULT_TYPE * quantptr;
-  JCOEFPTR coefptr;
-  int ctr;
-
-  /* idct_out temp buffer is needed because output_buf sample allocation is 8 bits,
-   * while IDCT output expects 16 bits.
-   */
-  INT16 idct_out[DCTSIZE2];  /* buffers data between passes */
-  JSAMPROW outptr;
-  INT16*  idctptr;
-
-  coefptr  = coef_block;
-  quantptr = (ISLOW_MULT_TYPE *) compptr->dct_table;
-
-  /* Dequantize the coeff buffer and write it back to the same location */
-  for (ctr = DCTSIZE; ctr > 0; ctr--) {
-    coefptr[0]         = DEQUANTIZE(coefptr[0]        , quantptr[0]        );
-    coefptr[DCTSIZE*1] = DEQUANTIZE(coefptr[DCTSIZE*1], quantptr[DCTSIZE*1]);
-    coefptr[DCTSIZE*2] = DEQUANTIZE(coefptr[DCTSIZE*2], quantptr[DCTSIZE*2]);
-    coefptr[DCTSIZE*3] = DEQUANTIZE(coefptr[DCTSIZE*3], quantptr[DCTSIZE*3]);
-    coefptr[DCTSIZE*4] = DEQUANTIZE(coefptr[DCTSIZE*4], quantptr[DCTSIZE*4]);
-    coefptr[DCTSIZE*5] = DEQUANTIZE(coefptr[DCTSIZE*5], quantptr[DCTSIZE*5]);
-    coefptr[DCTSIZE*6] = DEQUANTIZE(coefptr[DCTSIZE*6], quantptr[DCTSIZE*6]);
-    coefptr[DCTSIZE*7] = DEQUANTIZE(coefptr[DCTSIZE*7], quantptr[DCTSIZE*7]);
-
-    /* advance pointers to next column */
-    quantptr++;
-    coefptr++;
-  }
-
   idct_8x8_venum((INT16*)coef_block,
-                 (INT16*)idct_out,
-                 DCTSIZE * sizeof(INT16));
-
-  idctptr = idct_out;
-  for (ctr = 0; ctr < DCTSIZE; ctr++) {
-    outptr = output_buf[ctr] + output_col;
-    // outptr sample size is 1 byte while idctptr sample size is 2 bytes
-    outptr[0] = idctptr[0];
-    outptr[1] = idctptr[1];
-    outptr[2] = idctptr[2];
-    outptr[3] = idctptr[3];
-    outptr[4] = idctptr[4];
-    outptr[5] = idctptr[5];
-    outptr[6] = idctptr[6];
-    outptr[7] = idctptr[7];
-    idctptr  += DCTSIZE;      /* advance pointers to next row */
-  }
+                 output_buf,
+                 output_col,
+                 compptr->dct_table);
 }
 
 GLOBAL(void)
